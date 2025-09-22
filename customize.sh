@@ -13,7 +13,7 @@ fi
 
 if [ "$KSU" = true ] && [ "$KSU_VER_CODE" -lt 10683 ] ; then
   service_dir="/data/adb/ksu/service.d"
-else 
+else
   service_dir="/data/adb/service.d"
 fi
 
@@ -24,6 +24,8 @@ fi
 unzip -qo "${ZIPFILE}" -x 'META-INF/*' -d $MODPATH
 
 if [ -d /data/adb/box ] ; then
+  # 如果不存在 subs.txt 就创建一个
+  touch /data/adb/box/scripts/subs.txt
   cp /data/adb/box/scripts/box.config /data/adb/box/scripts/box.config.bak
   ui_print "- User configuration box.config has been backed up to box.config.bak"
 

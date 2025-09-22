@@ -32,10 +32,11 @@ const subscriptionLog = ref<string>('')
 
 // 控制函数
 const startCode = async (): Promise<void> => {
+  console.log('现在启动核心')
   // 清空之前的日志
   controlLog.value = ''
 
-  const process = spawn(`${boxDir}/scripts/box.service`, ['start'])
+  const process = spawn(`${boxDir}/scripts/box.service start`)
 
   process.stdout.on('data', (data: string) => {
     controlLog.value += data.toString()
@@ -47,6 +48,7 @@ const startCode = async (): Promise<void> => {
 
   process.on('exit', (code: number) => {
     if (code === 0) {
+      console.log('核心启动成功')
       // 更新运行状态
       getRunStatus().then((status) => {
         runStatus.value = status
@@ -58,10 +60,11 @@ const startCode = async (): Promise<void> => {
 }
 
 const stopCore = async (): Promise<void> => {
+  console.log('现在停止核心')
   // 清空之前的日志
   controlLog.value = ''
 
-  const process = spawn(`${boxDir}/scripts/box.service`, ['stop'])
+  const process = spawn(`${boxDir}/scripts/box.service stop`)
 
   process.stdout.on('data', (data: string) => {
     controlLog.value += data.toString()
@@ -73,6 +76,7 @@ const stopCore = async (): Promise<void> => {
 
   process.on('exit', (code: number) => {
     if (code === 0) {
+      console.log('核心停止成功')
       // 更新运行状态
       getRunStatus().then((status) => {
         runStatus.value = status
@@ -84,21 +88,25 @@ const stopCore = async (): Promise<void> => {
 }
 
 const restartCore = async (): Promise<void> => {
+  console.log('现在重启核心')
   // 清空之前的日志
   controlLog.value = ''
 
-  const process = spawn(`${boxDir}/scripts/box.service`, ['restart'])
+  const process = spawn(`${boxDir}/scripts/box.service restart`)
 
   process.stdout.on('data', (data: string) => {
+    console.log('[重启核心]: 有新的 stdout', data)
     controlLog.value += data.toString()
   })
 
   process.stderr.on('data', (data: string) => {
+    console.error('[重启核心]: 有新的 stderr', data)
     controlLog.value += data.toString()
   })
 
   process.on('exit', (code: number) => {
     if (code === 0) {
+      console.log('核心重启成功')
       // 更新运行状态
       getRunStatus().then((status) => {
         runStatus.value = status
@@ -110,6 +118,7 @@ const restartCore = async (): Promise<void> => {
 }
 
 const updateSubscription = async (): Promise<void> => {
+  console.log('现在更新订阅')
   // 清空之前的日志
   subscriptionLog.value = ''
 
@@ -138,18 +147,21 @@ const updateSubscription = async (): Promise<void> => {
     }
 
     // 执行 curl 命令获取订阅内容并直接覆盖配置文件
-    const process = spawn('sh', ['-c', `curl -s -L "${subsUrl}" > "${configPath}"`])
+    const process = spawn(`curl -s -L "${subsUrl}" > "${configPath}"`)
 
     process.stdout.on('data', (data: string) => {
+      console.log('[更新订阅]: 有新的 stdout', data)
       subscriptionLog.value += data.toString()
     })
 
     process.stderr.on('data', (data: string) => {
+      console.error('[更新订阅]: 有新的 stderr', data)
       subscriptionLog.value += data.toString()
     })
 
     process.on('exit', (code: number) => {
       if (code === 0) {
+        console.log('订阅更新成功')
         subscriptionLog.value += `订阅更新成功，已保存到: ${configPath}\n`
       } else {
         console.error(`更新订阅失败，退出码: ${code}`)
@@ -162,6 +174,7 @@ const updateSubscription = async (): Promise<void> => {
 }
 
 const saveSubscription = async (): Promise<void> => {
+  console.log('现在保存订阅地址')
   // 清空之前的日志
   subscriptionLog.value = ''
 
@@ -179,6 +192,7 @@ const saveSubscription = async (): Promise<void> => {
 }
 
 const getCoreType = async (): Promise<string> => {
+  console.log('获取核心类型')
   const { errno, stdout, stderr } = await exec(
     `cat ${boxDir}/scripts/box.config | grep bin_name= | cut -d '"' -f 2`,
   )
@@ -191,23 +205,34 @@ const getCoreType = async (): Promise<string> => {
 }
 
 const getRunStatus = async (): Promise<RunStatus> => {
+  console.log('获取运行状态')
   const { errno, stdout } = await exec(`${boxDir}/scripts/box.service status`)
-  if (errno === 0) {
-    // 解析 stdout，检查是否包含 "is running" 或 "is stopped"
-    const output = stdout.toString().trim()
-    if (output.includes('service is running')) {
-      return RunStatus.Running
-    } else if (output.includes('service is stopped')) {
-      return RunStatus.Stopped
-    } else {
+  const output = stdout.toString().trim()
+
+  switch (errno) {
+    case 0:
+      // 解析 stdout，检查是否包含 "is running" 或 "is stopped"
+      // 先把 output 推到日志
+      console.log('[获取运行状态]', output)
+      controlLog.value = output
+      if (output.includes('running')) {
+        return RunStatus.Running
+      } else if (output.includes('service is stopped')) {
+        return RunStatus.Stopped
+      } else {
+        return RunStatus.Error
+      }
+    case 1:
+      if (output.includes('service is stopped')) {
+        return RunStatus.Stopped
+      }
+    default:
       return RunStatus.Error
-    }
-  } else {
-    return RunStatus.Error
   }
 }
 
 const getSubscription = async (): Promise<string> => {
+  console.log('获取订阅地址')
   const { errno, stdout, stderr } = await exec(`cat ${boxDir}/scripts/subs.txt`)
   if (errno === 0) {
     return stdout.toString().trim()
@@ -269,7 +294,7 @@ onMounted(async () => {
         <h2>订阅管理</h2>
         <div class="subscription-content">
           <div class="subscription-item">
-            <label>订阅:</label>
+            <label>已经保存的订阅地址:</label>
             <span>{{ subscription }}</span>
           </div>
           <div class="subscription-input">

@@ -15,4 +15,5 @@ export default defineConfig({
   build: {
     outDir: '../webroot', // 输出到 webui/../webroot 目录
   },
+  server: {},
 })

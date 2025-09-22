@@ -1,0 +1,24 @@
+services:
+  traefik:
+    image: 'traefik:latest'
+    restart: always
+    network_mode: host
+    command:
+      - '--log.level=DEBUG'
+      - --api.insecure=true
+      - --api=true
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --entrypoints.traefik.address=:8976
+      - --entrypoints.websecure.address=:5174
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http2.maxConcurrentStreams=250
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.dashboard.rule=Host(`localhost`)'
+      - 'traefik.http.routers.dashboard.service=api@internal'
+      - 'traefik.http.routers.vite.rule=Host(`192.168.39.20`)'
+      - 'traefik.http.routers.vite.service=vite'
+      - 'traefik.http.services.vite.loadbalancer.server.port=5173'
+    volumes:
+      - /run/podman/podman.sock:/var/run/docker.sock:ro

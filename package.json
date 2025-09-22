@@ -8,8 +8,8 @@
         "node": "^20.19.0 || >=22.12.0"
     },
     "scripts": {
-        "build": "bun run --filter=box4magisk build",
-        "dev": "bun run --filter=box4magisk dev"
+        "build": "bun run --filter=box4magisk build --emptyOutDir",
+        "dev": "bun run --filter=box4magisk dev --host 0.0.0.0"
     },
     "devDependencies": {
         "@prettier/plugin-oxc": "^0.0.4",
