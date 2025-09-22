@@ -206,9 +206,9 @@ const getCoreType = async (): Promise<string> => {
 
 const getRunStatus = async (): Promise<RunStatus> => {
   console.log('获取运行状态')
-  const { errno, stdout } = await exec(`${boxDir}/scripts/box.service status`)
+  const { errno, stdout, stderr } = await exec(`${boxDir}/scripts/box.service status`)
   const output = stdout.toString().trim()
-
+  const errout = stderr.toString().trim()
   switch (errno) {
     case 0:
       // 解析 stdout，检查是否包含 "is running" 或 "is stopped"
@@ -224,6 +224,7 @@ const getRunStatus = async (): Promise<RunStatus> => {
       }
     case 1:
       if (output.includes('service is stopped')) {
+        controlLog.value = errout
         return RunStatus.Stopped
       }
     default:
